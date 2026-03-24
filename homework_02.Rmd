@@ -1,0 +1,101 @@
+---
+title: "homework_02"
+author: "linchenwang"
+date: "2026-03-24"
+output: pdf_document
+---
+
+```{r}
+# -------------------------------
+# 1. Search for tidyverse package
+# -------------------------------
+
+# Search for "tidyverse" in CRAN
+help.search("tidyverse")
+
+# Check available packages on CRAN
+# available.packages()["tidyverse", ]
+
+# -------------------------------
+# 2. Install tidyverse package
+# -------------------------------
+
+# install.packages("tidyverse")  # (run in Console, not in Rmd)
+
+# -------------------------------
+# 3. Load and inspect the package
+# -------------------------------
+
+# Load the package
+library(tidyverse)
+
+# Check package version
+packageVersion("tidyverse")
+
+# View package documentation
+help(package = "tidyverse")
+
+# View core packages inside tidyverse
+tidyverse::tidyverse_packages()
+
+# List functions in dplyr package
+ls("package:dplyr")
+
+# List datasets from all available packages
+data(package = .packages(all.available = TRUE))
+
+# List datasets in dplyr package
+data(package = "dplyr")
+```
+
+```{r}
+####1.Using a for loop
+
+# Custom function: check if values exceed a threshold
+check_threshold <- function(vec, threshold = 35) {
+  
+  result <- vector(length = length(vec))
+  
+  for (i in 1:length(vec)) {
+    
+    if (vec[i] > threshold) {
+      result[i] <- TRUE
+    } else {
+      result[i] <- FALSE
+    }
+    
+  }
+  return(result)
+}
+
+# Test the function
+x <- rnorm(n = 10, mean = 35, sd = 10)
+print(x)
+
+check_threshold(x, 35)
+```
+
+
+```{r}
+
+
+###2.Using apply family (sapply)
+
+#  Custom function using sapply
+check_threshold_apply <- function(vec, threshold = 35) {
+  
+  sapply(vec, function(v) {
+    v > threshold
+  })
+  
+}
+
+# Generate random numbers
+x <- rnorm(n = 10, mean = 35, sd = 10)
+print(x)
+
+# Test the function
+check_threshold_apply(x, 35)
+
+```
+
