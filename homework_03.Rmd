@@ -1,0 +1,42 @@
+---
+title: "Homework_03"
+author: "linchenwang"
+date: "2026-03-25"
+output: pdf_document
+---
+
+
+```{r}
+library(ade4)
+library(dplyr)
+data(doubs)
+
+doubs$env %>%  
+  select(dfs, alt, oxy, pH) %>%                # select dfs, alt, oxy, pH
+  rename(distance = dfs, oxygen = oxy) %>%     # rename
+  filter(alt > 200) %>%                        # keep the rows in which alt > 200
+  arrange(desc(alt)) %>%                        # order by alt decrease
+  mutate(
+    oxygen_category = if_else(oxygen > 90, "High", "Low")
+  ) %>%                                         # add a new column with categories
+  group_by(oxygen_category) %>%                 # groups by oxy
+  summarise(
+    mean_alt = mean(alt, na.rm = TRUE),
+    mean_pH  = mean(pH, na.rm = TRUE)
+  )
+```
+
+
+```{r}
+library(ggplot2)
+library(ade4)
+
+data(doubs)
+
+ggplot(data = doubs$env) +
+  geom_point(mapping=aes(x = alt, y = oxy)) # dot plots
+
+ggplot(data = doubs$env) +
+  geom_point(mapping = aes(x = alt, y = oxy, color = dfs))
+```
+
