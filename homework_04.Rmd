@@ -41,6 +41,8 @@ head(doubs_fish)
 
 
 ```{r,eval=FALSE}
+
+library(caret)
 #2）利用train()，采用默认boostrap重采样方法，训练随机森林（randomForest）模型
 model_rf <- train(abund ~ .,  data = training_data,  method = "rf") 
 #3）通过trainControl()，向train()添加10-fold cross-validation重采样，以优化参数
@@ -52,7 +54,7 @@ preProcess = c('scale', 'center'),
 trControl =fitControl)
 #4）rf有mtry和tree两个参数，可以通过expand.grid()设置调优，并在train()添加
 grid <- expand.grid(.mtry=c(1:10))
-model_rf <- train(biodiv ~ ., data = training_data, method = "rf",
+model_rf <- train(abund~ ., data = training_data, method = "rf",
 preProcess = c('scale', 'center'),
 trControl =fitControl,
 tuneGrid = grid)
