@@ -82,7 +82,7 @@ model_rf
 fitControl <- trainControl(method = "repeatedcv",
                            number = 5,
                            repeats = 5)
-model_rf <- train(abund ~ .,
+model_rf <- train(abund ~ .- site,
                   data = training_data,
                   method = "rf",
                   trControl =fitControl)
@@ -103,6 +103,9 @@ model_rf
 
 ```{r}
 #7）rf有mtry和tree两个参数，可以通过expand.grid()设置调优，并在train()添加
+fitControl <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 5)
 grid <- expand.grid(.mtry=c(1:10))
 model_rf <- train(abund~ .- site,
                   data = training_data,
