@@ -8,11 +8,15 @@ output: word_document
 
  1. 从建模目标、建模算法和评估方面，阐述机器学习建模与传统统计模型有哪些不同
 
-统计建模和机器学习使用方法是相似的，最明显的例子就是线性回归，这种相似性使人们误认为两者是同一件事。统计学方法和机器学习方法存在本质上的不同，是两种完全不同的范式，两者差异可归纳如下：（1）统计建模是通过假设一个合适的数据模型，然后根据数据估计模型参数。相反，机器学习方法不是从模型开始，而是使用一种算法来学习响应与预测变量之间的关系。机器学习方法是假设生成过程是复杂和未知的，试图通过观察输人和响应发现主导模式。
-（2）传统统计方法选择了一个模型，没有检验任何其他假设。机器学习方法首先给出的是模型集合，包括多项式模型、指数模型等，目标是从不同模型选择最佳的一个。当然，最终的结果与回归算法结果可能是一致的。
- （3）统计模型重点是描述数据与结果变量之间的关系，评估模型的合理性是通过置信区间、显著性检验和其他检验对回归参数进行分析，即统计推断。机器学习涉及训练集和测试集，模型优劣通过测试集评估。
-（4）统计建模更多关注变量之间的关系和意义，是可解释的。然而，机器学习强调预测性能，而不在于模型是否具有可解释性。
+统计建模与机器学习在某些方法上具有相似性，例如线性回归既可以看作统计模型，也可以看作机器学习中的一种基础方法，因此容易让人误以为二者是同一类方法。但实际上，两者在建模目标、建模思路和模型评估方面存在明显差异。
 
+首先，在建模目标上，传统统计模型更强调解释变量与响应变量之间的关系，关注变量是否显著、作用方向如何、影响程度有多大，因此更重视“解释性”和“推断性”。而机器学习更关注模型的预测能力，目标是尽可能准确地预测新数据上的结果，因此更强调“泛化能力”和“预测性能”。
+
+其次，在建模算法上，传统统计模型通常先假设数据服从某种分布或满足某种函数关系，再利用样本数据估计模型参数。例如线性回归假设自变量与因变量之间满足线性关系。机器学习则往往不预先强烈假设数据生成机制，而是通过算法从数据中自动学习输入变量与输出变量之间的复杂关系。传统统计模型往往基于单一模型展开分析，而机器学习常常会在多个候选模型中进行比较，并通过调参选择表现最优的模型。
+
+最后，在模型评估上，传统统计模型主要通过参数估计、显著性检验、置信区间、残差分析等方法判断模型是否合理，核心在于统计推断；机器学习则通常将数据划分为训练集和测试集，或者采用交叉验证，通过 RMSE、准确率、AUC 等指标评价模型在未知数据上的表现，更强调预测结果的稳定性与准确性。
+
+总之，传统统计模型更注重变量关系的解释和理论推断，而机器学习更注重从数据中学习规律并提高预测精度。二者并不是互相替代的关系，而是适用于不同研究目的的两类建模范式。
 
 
 
@@ -20,41 +24,93 @@ output: word_document
 
 ```{r}
 # 2. 生态学上常用树模型，包括随机森林、提升回归树。建模步骤包括：数据预处理、拆分数据集、选择特征、算法和训练模型、模型评估等。caret为各种机器学习算法提供了统一模板，加载doubs数据集，请根据问题填空。
-# 1）对于doubs中的鱼群数据，按照样地，计算各样地鱼类总丰度，作为新列abund。
 library(ade4)
 library(dplyr)
-
+library(caret)
 data(doubs)
+
+# 1）对于doubs中的鱼群数据，按照样地，计算各样地鱼类总丰度，作为新列abund。
 
 doubs_fish <- doubs$fish %>%
   mutate(
-    site = rownames(.),  
-    abund = rowSums(select(., where(is.numeric)))  # Sum only numeric columns
+    site = rownames(.),
+    abund = rowSums(select(., where(is.numeric)))
   )
-# View results
 head(doubs_fish)
+
+```
+
+```{r}
+# 2）将环境变量与总丰度合并，构建建模数据集 Env
+doubs_env <- doubs$env %>%
+  mutate(site = rownames(.))
+
+Env <- left_join(doubs_env, doubs_fish %>%
+                   select(site, abund), 
+                 by = "site")
+
+head(Env)
+```
+
+
+```{r}
+# 3）构建训练集和测试集
+set.seed(123)
+train_index <- createDataPartition(Env$abund, p = 0.7, list = FALSE)
+
+training_data <- Env[train_index, ]
+testing_data  <- Env[-train_index, ]
+
+head(training_data)
 ```
 
 
 
 
-```{r,eval=FALSE}
+```{r}
+#4）利用train()，采用默认boostrap重采样方法，训练随机森林（randomForest）模型
+model_rf <- train(abund ~ . - site,
+                  data = training_data,
+                  method = "rf")
+model_rf
+```
 
-#2）利用train()，采用默认boostrap重采样方法，训练随机森林（randomForest）模型
-model_rf <- train(abund ~ .,  data = training_data,  method = "rf") 
-#3）通过trainControl()，向train()添加10-fold cross-validation重采样，以优化参数
-fitControl <- trainControl(method = "repeatedcv",  number = 10, repeats = 5)
-model_rf <- train(abund ~ ., data = training_data, method = "rf", trControl =fitControl) 
-#3）在train()中，增加中心化和标准化等数据预处理，提高模型精度
-model_rf <- train(abund ~ ., data = training_data,  method = "rf", 
-preProcess = c('scale', 'center'),
-trControl =fitControl)
-#4）rf有mtry和tree两个参数，可以通过expand.grid()设置调优，并在train()添加
+
+
+```{r}
+#5）通过trainControl()，向train()添加10-fold cross-validation重采样，以优化参数
+fitControl <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 5)
+model_rf <- train(abund ~ .,
+                  data = training_data,
+                  method = "rf",
+                  trControl =fitControl)
+model_rf
+```
+
+```{r}
+#6）在train()中，增加中心化和标准化等数据预处理，提高模型精度
+model_rf <- train(abund ~ .- site,
+                  data = training_data,
+                  method = "rf", 
+                  preProcess = c('scale', 'center'),
+                  trControl =fitControl)
+model_rf
+```
+
+
+
+```{r}
+#7）rf有mtry和tree两个参数，可以通过expand.grid()设置调优，并在train()添加
 grid <- expand.grid(.mtry=c(1:10))
-model_rf <- train(abund~ ., data = training_data, method = "rf",
-preProcess = c('scale', 'center'),
-trControl =fitControl,
-tuneGrid = grid)
+model_rf <- train(abund~ .- site,
+                  data = training_data,
+                  method = "rf",
+                  preProcess = c('scale', 'center'),
+                  trControl =fitControl,
+                  tuneGrid = grid)
+model_rf
 ```
 
 
@@ -62,7 +118,15 @@ tuneGrid = grid)
 
 
 3. 什么是递归消除选择？在caret包中，为何选择随机森林等树模型时，没有特征选择这个过程？
-（1）递归消除选择：选择特征的一个较好方法是递归消除选择，递归消除特征法使用一个基模型来进行多轮训练，首先用所有特征训练模型得到每个特征权重，并剔除拥有最小权重特征，之后再基于其余特征训练，重复前面的过程，如此往复递归，直至剩余的特征数量达到所需的特征数量。
-（2）内置特征重要性评估：树模型在训练时自动计算特征重要性（如基尼不纯度减少量），可通过varImp()直接获取；抗高维噪声：随机森林通过自助采样和随机子空间法，天然对冗余特征和噪声具有鲁棒性。
 
+递归特征消除（Recursive Feature Elimination, RFE）是一种常用的特征选择方法。其基本思想是：首先使用全部特征建立模型，并根据模型输出计算每个特征的重要性；然后删除最不重要的特征，再用剩余特征重新训练模型；如此反复进行，直到剩下预先设定数量的特征为止。通过这种递归方式，可以筛选出对模型预测最有贡献的一组变量，从而减少冗余信息，提高模型的简洁性和泛化能力。
 
+在 caret 包中，使用随机森林等树模型时，通常不再单独强调特征选择过程，主要有以下原因。
+
+第一，树模型具有内置的特征筛选能力。随机森林在每次节点分裂时，只会从随机抽取的一部分变量中选择最优变量进行分裂，因此模型训练本身就已经包含了变量筛选过程。
+
+第二，树模型可以自动评估变量重要性。例如随机森林可以根据结点纯度下降量或预测误差增加量来衡量每个变量的重要性，研究者可以通过 varImp() 等函数直接查看各变量贡献。
+
+第三，树模型对高维特征、冗余特征和噪声变量具有较好的鲁棒性。随机森林通过 bootstrap 抽样和随机子空间方法降低了过拟合风险，因此即使不进行显式特征筛选，也往往能够获得较好的预测效果。
+
+因此，相比于线性模型等对变量冗余较敏感的方法，随机森林等树模型在建模时通常可以省略单独的特征选择步骤，而更多依赖模型内部机制完成变量筛选与重要性评估。
